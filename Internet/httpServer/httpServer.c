@@ -30,6 +30,7 @@ static uint8_t * http_response;						/**< Pointer to HTTP response */
 
 // Number of registered web content in code flash memory
 static uint16_t total_content_cnt = 0;
+static uint16_t total_dynamic_content_cnt = 0;
 /*****************************************************************************
  * Public types/enumerations/variables
  ****************************************************************************/
@@ -39,6 +40,9 @@ uint8_t * pHTTP_RX;
 volatile uint32_t httpServer_tick_1s = 0;
 st_http_socket HTTPSock_Status[_WIZCHIP_SOCK_NUM_] = { {STATE_HTTP_IDLE, }, };
 httpServer_webContent web_content[MAX_CONTENT_CALLBACK];
+httpServer_dynamicContent dynamic_content[MAX_CONTENT_CALLBACK];
+
+uint8_t dynContent_buf[256] = {0, };
 
 #ifdef	_USE_SDCARD_
 FIL fs;		// FatFs: File object
@@ -397,6 +401,11 @@ static void send_http_response_body(uint8_t s, uint8_t * uri_name, uint8_t * buf
 		if(HTTPSock_Status[get_seqnum].file_len) start_addr = HTTPSock_Status[get_seqnum].file_start;
 		read_userReg_webContent(start_addr, &buf[0], HTTPSock_Status[get_seqnum].file_offset, send_len);
 	}
+	else if(HTTPSock_Status[get_seqnum].storage_type == DYNAMIC)
+        {
+          // do nothing, we already read the content into the buffer
+          strcpy(&buf[0], dynContent_buf);
+        }
 #ifdef _USE_SDCARD_
 	else if(HTTPSock_Status[get_seqnum].storage_type == SDCARD)
 	{
@@ -548,6 +557,13 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 					content_addr = (uint32_t)content_num;
 					HTTPSock_Status[get_seqnum].storage_type = CODEFLASH;
 				}
+				else if(find_userReg_dynContent(uri_buf, &content_num))
+                                {
+                                  content_found = 1; // Web content found in code flash memory
+                                  content_addr = (uint32_t) content_num;
+                                  HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
+                                  file_len = dynamic_content[content_addr].callback(dynContent_buf);
+                                }
 				// Not CGI request, Web content in 'SD card' or 'Data flash' requested
 #ifdef _USE_SDCARD_
 #ifdef _HTTPSERVER_DEBUG_
@@ -637,7 +653,27 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 			}
 			else	// HTTP POST Method; Content not found
 			{
-				send_http_response_header(s, 0, 0, STATUS_NOT_FOUND);
+			  // uri_buf -> name
+                          int i = 0;
+                          char * pch;
+                          printf ("Splitting string \"%s\" into tokens:\n",p_http_request->URI);
+                          pch = strtok (p_http_request->URI,"\n");
+                          while (pch != NULL)
+                          {
+                              printf ("%d: %s\n",i++, pch);
+                              pch = strtok (NULL, "\n");
+                          }
+                          // find user registered handler
+                          content_found = 0;
+
+                          if(content_found)
+                          {
+                            // send the response
+                          }
+                          else
+                          {
+                            send_http_response_header(s, 0, 0, STATUS_NOT_FOUND);
+                          }
 			}
 			break;
 
@@ -681,6 +717,27 @@ void reg_httpServer_webContent(uint8_t * content_name, uint8_t * content)
 	web_content[total_content_cnt].content = content;
 
 	total_content_cnt++;
+}
+
+void reg_httpServer_dynContent(uint8_t *content_name, webCallback callback) {
+  uint16_t name_len;
+
+  if(content_name == NULL || callback == NULL)
+  {
+    return;
+  }
+  else if(total_dynamic_content_cnt >= MAX_CONTENT_CALLBACK)
+  {
+    return;
+  }
+
+  name_len = strlen((char*) content_name);
+
+  dynamic_content[total_dynamic_content_cnt].content_name = malloc(name_len + 1);
+  strcpy((char*) dynamic_content[total_dynamic_content_cnt].content_name, (const char*) content_name);
+  dynamic_content[total_dynamic_content_cnt].callback = callback;
+
+  total_dynamic_content_cnt++;
 }
 
 uint8_t display_reg_webContent_list(void)
@@ -728,6 +785,22 @@ uint8_t find_userReg_webContent(uint8_t * content_name, uint16_t * content_num, 
 		}
 	}
 	return ret;
+}
+
+uint8_t find_userReg_dynContent(uint8_t *content_name, uint16_t *content_num) {
+  uint16_t i;
+  uint8_t ret = 0; // '0' means 'File Not Found'
+
+  for(i = 0; i < total_dynamic_content_cnt; i++)
+  {
+    if(!strcmp((char*) content_name, (char*) dynamic_content[i].content_name))
+    {
+      *content_num = i;
+      ret = 1; // If the requested content found, ret set to '1' (Found)
+      break;
+    }
+  }
+  return ret;
 }
 
 

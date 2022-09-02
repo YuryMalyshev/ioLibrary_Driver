@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 // HTTP Server debug message enable
-#define _HTTPSERVER_DEBUG_
+//#define _HTTPSERVER_DEBUG_
 
 #define INITIAL_WEBPAGE				"index.html"
 #define M_INITIAL_WEBPAGE			"m/index.html"
@@ -64,7 +64,8 @@ typedef enum
    NONE,		///< Web storage none
    CODEFLASH,	///< Code flash memory
    SDCARD,    	///< SD card
-   DATAFLASH	///< External data flash memory
+   DATAFLASH,	///< External data flash memory
+   DYNAMIC      ///< Dynamic data
 }StorageType;
 
 typedef struct _st_http_socket
@@ -87,13 +88,22 @@ typedef struct _httpServer_webContent
 	uint8_t * 	content;
 }httpServer_webContent;
 
+typedef uint32_t (*webCallback)(uint8_t *buf);  ///< callback function that fills the buf & returns the length
+typedef struct _httpServer_dynamicContent
+{
+        uint8_t *       content_name;
+        webCallback     callback;
+}httpServer_dynamicContent;
+
 
 void httpServer_init(uint8_t * tx_buf, uint8_t * rx_buf, uint8_t cnt, uint8_t * socklist);
 void reg_httpServer_cbfunc(void(*mcu_reset)(void), void(*wdt_reset)(void));
 void httpServer_run(uint8_t seqnum);
 
 void reg_httpServer_webContent(uint8_t * content_name, uint8_t * content);
+void reg_httpServer_dynContent(uint8_t *content_name, webCallback callback);
 uint8_t find_userReg_webContent(uint8_t * content_name, uint16_t * content_num, uint32_t * file_len);
+uint8_t find_userReg_dynContent(uint8_t *content_name, uint16_t *content_num);
 uint16_t read_userReg_webContent(uint16_t content_num, uint8_t * buf, uint32_t offset, uint16_t size);
 uint8_t display_reg_webContent_list(void);
 
