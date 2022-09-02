@@ -27,6 +27,7 @@ extern "C" {
 #define		PTYPE_HTML		1		/**< HTML file.  */
 #define		PTYPE_GIF		2		/**< GIF file.   */
 #define		PTYPE_TEXT		3		/**< TEXT file.  */
+#define         PTYPE_CGX               25              /**< CGX file.  */
 #define		PTYPE_JPEG		4		/**< JPEG file.  */
 #define		PTYPE_FLASH		5		/**< FLASH file. */
 #define		PTYPE_MPEG		6		/**< MPEG file.  */
@@ -75,6 +76,9 @@ static const char 	ERROR_REQUEST_PAGE[] = "HTTP/1.1 400 OK\r\nContent-Type: text
 
 /* Response head for TEXT */
 #define RES_TEXTHEAD_OK	"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+
+/* Response head for CGX, formatted text */
+#define RES_CGXHEAD_OK  "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
 
 /* Response head for GIF */
 #define RES_GIFHEAD_OK	"HTTP/1.1 200 OK\r\nContent-Type: image/gif\r\nContent-Length: "

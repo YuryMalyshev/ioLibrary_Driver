@@ -55,6 +55,7 @@ void make_http_response_head(
 	if 	(type == PTYPE_HTML) 		head = RES_HTMLHEAD_OK;
 	else if (type == PTYPE_GIF)		head = RES_GIFHEAD_OK;
 	else if (type == PTYPE_TEXT)	head = RES_TEXTHEAD_OK;
+	else if (type == PTYPE_CGX)    head = RES_CGXHEAD_OK;
 	else if (type == PTYPE_JPEG)	head = RES_JPEGHEAD_OK;
 	else if (type == PTYPE_FLASH)	head = RES_FLASHHEAD_OK;
 	else if (type == PTYPE_XML) 	head =  RES_XMLHEAD_OK;
@@ -102,6 +103,7 @@ void find_http_uri_type(
 	if 	(strstr(buf, ".htm")	|| strstr(buf, ".html"))	*type = PTYPE_HTML;
 	else if (strstr(buf, ".gif"))							*type = PTYPE_GIF;
 	else if (strstr(buf, ".text") 	|| strstr(buf,".txt"))	*type = PTYPE_TEXT;
+	else if (strstr(buf, ".cgx"))                           *type = PTYPE_CGX;
 	else if (strstr(buf, ".jpeg") 	|| strstr(buf,".jpg"))	*type = PTYPE_JPEG;
 	else if (strstr(buf, ".swf")) 							*type = PTYPE_FLASH;
 	else if (strstr(buf, ".cgi") 	|| strstr(buf,".CGI"))	*type = PTYPE_CGI;
