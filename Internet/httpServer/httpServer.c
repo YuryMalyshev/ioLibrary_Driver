@@ -42,7 +42,7 @@ st_http_socket HTTPSock_Status[_WIZCHIP_SOCK_NUM_] = { {STATE_HTTP_IDLE, }, };
 httpServer_webContent web_content[MAX_CONTENT_CALLBACK];
 httpServer_dynamicContent dynamic_content[MAX_CONTENT_CALLBACK];
 
-uint8_t dynContent_buf[256] = {0, };
+uint8_t dynContent_buf[1024] = {0, };
 
 #ifdef	_USE_SDCARD_
 FIL fs;		// FatFs: File object
