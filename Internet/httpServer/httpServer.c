@@ -31,6 +31,7 @@ static uint8_t * http_response;						/**< Pointer to HTTP response */
 // Number of registered web content in code flash memory
 static uint16_t total_content_cnt = 0;
 static uint16_t total_dynamic_content_cnt = 0;
+static uint16_t total_post_handler_cnt = 0;
 /*****************************************************************************
  * Public types/enumerations/variables
  ****************************************************************************/
@@ -41,6 +42,7 @@ volatile uint32_t httpServer_tick_1s = 0;
 st_http_socket HTTPSock_Status[_WIZCHIP_SOCK_NUM_] = { {STATE_HTTP_IDLE, }, };
 httpServer_webContent web_content[MAX_CONTENT_CALLBACK];
 httpServer_dynamicContent dynamic_content[MAX_CONTENT_CALLBACK];
+httpServer_dynamicContent post_handlers[MAX_CONTENT_CALLBACK];
 
 uint8_t dynContent_buf[1024] = {0, };
 
@@ -651,30 +653,54 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 					send_http_response_header(s, PTYPE_CGI, 0, STATUS_NOT_FOUND);
 				}
 			}
-			else	// HTTP POST Method; Content not found
-			{
-			  // uri_buf -> name
-                          int i = 0;
-                          char * pch;
-                          printf ("Splitting string \"%s\" into tokens:\n",p_http_request->URI);
-                          pch = strtok (p_http_request->URI,"\n");
-                          while (pch != NULL)
+			else if(find_userReg_postHandler(uri_buf, &content_num))
+                        {
+                          webCallback handler = post_handlers[content_num].callback;
+                          if(find_userReg_dynContent(uri_buf, &content_num))
                           {
-                              printf ("%d: %s\n",i++, pch);
-                              pch = strtok (NULL, "\n");
-                          }
-                          // find user registered handler
-                          content_found = 0;
-
-                          if(content_found)
-                          {
-                            // send the response
+                            content_found = 1; // Web content found
+                            handler(uri_buf); // call the handler
+                            content_addr = (uint32_t) content_num;
+                            HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
+                            file_len = dynamic_content[content_addr].callback(dynContent_buf);
                           }
                           else
-                          {
-                            send_http_response_header(s, 0, 0, STATUS_NOT_FOUND);
-                          }
-			}
+                            content_found = 0;
+                        }
+                        else	// HTTP POST Method; Content not found
+                        {
+                          content_found = 0;
+                        }
+
+                        if(!content_found)
+                        {
+#ifdef _HTTPSERVER_DEBUG_
+                          printf("> HTTPSocket[%d] : Unknown Page Request\r\n", s);
+#endif
+                          http_status = STATUS_NOT_FOUND;
+                        }
+                        else
+                        {
+#ifdef _HTTPSERVER_DEBUG_
+                          printf("> HTTPSocket[%d] : Find Content [%s] ok - Start [%ld] len [ %ld ]byte\r\n", s, uri_name, content_addr, file_len);
+#endif
+                          http_status = STATUS_OK;
+                        }
+
+                        // Send HTTP header
+                        if(http_status)
+                        {
+#ifdef _HTTPSERVER_DEBUG_
+                          printf("> HTTPSocket[%d] : Requested content len = [ %ld ]byte\r\n", s, file_len);
+#endif
+                          send_http_response_header(s, p_http_request->TYPE, file_len, http_status);
+                        }
+
+                        // Send HTTP body (content)
+                        if(http_status == STATUS_OK)
+                        {
+                          send_http_response_body(s, uri_name, http_response, content_addr, file_len);
+                        }
 			break;
 
 		default :
@@ -740,6 +766,27 @@ void reg_httpServer_dynContent(uint8_t *content_name, webCallback callback) {
   total_dynamic_content_cnt++;
 }
 
+void reg_httpServer_postHandler(uint8_t *content_name, webCallback callback) {
+  uint16_t name_len;
+
+  if(content_name == NULL || callback == NULL)
+  {
+    return;
+  }
+  else if(total_post_handler_cnt >= MAX_CONTENT_CALLBACK)
+  {
+    return;
+  }
+
+  name_len = strlen((char*) content_name);
+
+  post_handlers[total_post_handler_cnt].content_name = malloc(name_len + 1);
+  strcpy((char*) post_handlers[total_post_handler_cnt].content_name, (const char*) content_name);
+  post_handlers[total_post_handler_cnt].callback = callback;
+
+  total_post_handler_cnt++;
+}
+
 uint8_t display_reg_webContent_list(void)
 {
 	uint16_t i;
@@ -788,6 +835,22 @@ uint8_t find_userReg_webContent(uint8_t * content_name, uint16_t * content_num, 
 }
 
 uint8_t find_userReg_dynContent(uint8_t *content_name, uint16_t *content_num) {
+  uint16_t i;
+  uint8_t ret = 0; // '0' means 'File Not Found'
+
+  for(i = 0; i < total_dynamic_content_cnt; i++)
+  {
+    if(!strcmp((char*) content_name, (char*) dynamic_content[i].content_name))
+    {
+      *content_num = i;
+      ret = 1; // If the requested content found, ret set to '1' (Found)
+      break;
+    }
+  }
+  return ret;
+}
+
+uint8_t find_userReg_postHandler(uint8_t *content_name, uint16_t *content_num) {
   uint16_t i;
   uint8_t ret = 0; // '0' means 'File Not Found'
 
