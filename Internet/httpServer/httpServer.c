@@ -659,7 +659,7 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
                           if(find_userReg_dynContent(uri_buf, &content_num))
                           {
                             content_found = 1; // Web content found
-                            handler(uri_buf); // call the handler
+                            handler(p_http_request->URI); // call the handler
                             content_addr = (uint32_t) content_num;
                             HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
                             file_len = dynamic_content[content_addr].callback(dynContent_buf);
@@ -854,9 +854,9 @@ uint8_t find_userReg_postHandler(uint8_t *content_name, uint16_t *content_num) {
   uint16_t i;
   uint8_t ret = 0; // '0' means 'File Not Found'
 
-  for(i = 0; i < total_dynamic_content_cnt; i++)
+  for(i = 0; i < total_post_handler_cnt; i++)
   {
-    if(!strcmp((char*) content_name, (char*) dynamic_content[i].content_name))
+    if(!strcmp((char*) content_name, (char*) post_handlers[i].content_name))
     {
       *content_num = i;
       ret = 1; // If the requested content found, ret set to '1' (Found)
