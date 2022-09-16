@@ -21,7 +21,7 @@
  * Private types/enumerations/variables
  ****************************************************************************/
 static uint8_t HTTPSock_Num[_WIZCHIP_SOCK_NUM_] = {0, };
-static st_http_request * http_request;				/**< Pointer to received HTTP request */
+static uint8_t * http_request;				/**< Pointer to received HTTP request */
 static st_http_request * parsed_http_request;		/**< Pointer to parsed HTTP request */
 static uint8_t * http_response;						/**< Pointer to HTTP response */
 
@@ -131,7 +131,7 @@ void httpServer_run(uint8_t seqnum)
 	uint16_t destport = 0;
 #endif
 
-	http_request = (st_http_request *)pHTTP_RX;		// Structure of HTTP Request
+	http_request = pHTTP_RX;		// Structure of HTTP Request
 	parsed_http_request = (st_http_request *)pHTTP_TX;
 
 	// Get the H/W socket number
@@ -155,11 +155,9 @@ void httpServer_run(uint8_t seqnum)
 					if ((len = getSn_RX_RSR(s)) > 0)
 					{
 						if (len > DATA_BUF_SIZE) len = DATA_BUF_SIZE;
-						len = recv(s, (uint8_t *)http_request, len);
+						len = recv(s, http_request, len);
 
-						*(((uint8_t *)http_request) + len) = '\0';
-
-						parse_http_request(parsed_http_request, (uint8_t *)http_request);
+						parse_http_request(parsed_http_request, http_request);
 #ifdef _HTTPSERVER_DEBUG_
 						getSn_DIPR(s, destip);
 						destport = getSn_DPORT(s);
@@ -502,8 +500,6 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 	uint16_t content_num = 0;
 	uint32_t file_len = 0;
 
-	uint8_t uri_buf[MAX_URI_SIZE]={0x00, };
-
 	uint16_t http_status;
 	int8_t get_seqnum;
 	uint8_t content_found;
@@ -524,8 +520,7 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 
 		case METHOD_HEAD :
 		case METHOD_GET :
-			get_http_uri_name(p_http_request->URI, uri_buf);
-			uri_name = uri_buf;
+			uri_name = (char *)p_http_request->URI;
 
 			if (!strcmp((char *)uri_name, "/")) strcpy((char *)uri_name, INITIAL_WEBPAGE);	// If URI is "/", respond by index.html
 			if (!strcmp((char *)uri_name, "m")) strcpy((char *)uri_name, M_INITIAL_WEBPAGE);
@@ -553,13 +548,13 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 			else
 			{
 				// Find the User registered index for web content
-				if(find_userReg_webContent(uri_buf, &content_num, &file_len))
+				if(find_userReg_webContent(uri_name, &content_num, &file_len))
 				{
 					content_found = 1; // Web content found in code flash memory
 					content_addr = (uint32_t)content_num;
 					HTTPSock_Status[get_seqnum].storage_type = CODEFLASH;
 				}
-				else if(find_userReg_dynContent(uri_buf, &content_num))
+				else if(find_userReg_dynContent(uri_name, &content_num))
                                 {
                                   content_found = 1; // Web content found in code flash memory
                                   content_addr = (uint32_t) content_num;
@@ -625,8 +620,7 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 			break;
 
 		case METHOD_POST :
-			mid((char *)p_http_request->URI, "/", " HTTP", (char *)uri_buf);
-			uri_name = uri_buf;
+			uri_name = (char *)p_http_request->URI;
 			find_http_uri_type(&p_http_request->TYPE, uri_name);	// Check file type (HTML, TEXT, GIF, JPEG are included)
 
 #ifdef _HTTPSERVER_DEBUG_
@@ -653,24 +647,27 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 					send_http_response_header(s, PTYPE_CGI, 0, STATUS_NOT_FOUND);
 				}
 			}
-			else if(find_userReg_postHandler(uri_buf, &content_num))
-                        {
-                          webCallback handler = post_handlers[content_num].callback;
-                          if(find_userReg_dynContent(uri_buf, &content_num))
+			else
+			{
+			  if(find_userReg_postHandler(uri_name, &content_num))
                           {
-                            content_found = 1; // Web content found
-                            handler(p_http_request->URI); // call the handler
-                            content_addr = (uint32_t) content_num;
-                            HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
-                            file_len = dynamic_content[content_addr].callback(dynContent_buf);
+                            webCallback handler = post_handlers[content_num].callback;
+                            if(find_userReg_dynContent(uri_name, &content_num))
+                            {
+                              content_found = 1; // Web content found
+                              handler(p_http_request); // call the handler
+                              content_addr = (uint32_t) content_num;
+                              HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
+                              file_len = dynamic_content[content_addr].callback(dynContent_buf);
+                            }
+                            else
+                              content_found = 0;
                           }
-                          else
+                          else	// HTTP POST Method; Content not found
+                          {
                             content_found = 0;
-                        }
-                        else	// HTTP POST Method; Content not found
-                        {
-                          content_found = 0;
-                        }
+                          }
+			}
 
                         if(!content_found)
                         {

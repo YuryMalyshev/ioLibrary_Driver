@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "socket.h"
 #include "httpParser.h"
 
@@ -131,41 +132,76 @@ void parse_http_request(
 	uint8_t * buf				/**< pointer to be parsed */
 	)
 {
-  char * nexttok;
-  nexttok = strtok((char*)buf," ");
-  if(!nexttok)
+  // Input string examples:
+  // GET /helloworld.txt HTTP/1.1\r\nHeaderKey: HeaderValue\r\n\r\nBodyContent
+  // POST /helloworld.txt?key=value HTTP/1.1\r\nHeaderKey: HeaderValue\r\n
+  char *tokend;
+  char *tok;
+
+  // --- find the method (GET/POST/HEAD) --- //
+  tok = buf;
+  // find " " (SPACE) ()
+  tokend = strstr(tok, " ");
+  if(tokend == NULL) // there is no space after the method. Invalid request
   {
     request->METHOD = METHOD_ERR;
     return;
   }
-  if(!strcmp(nexttok, "GET") || !strcmp(nexttok,"get"))
+  // compare first N characters
+  if(!strncmp(tok, "GET", 3) || !strncmp(tok,"get", 3))
   {
     request->METHOD = METHOD_GET;
-    nexttok = strtok(NULL," ");
-
   }
-  else if (!strcmp(nexttok, "HEAD") || !strcmp(nexttok,"head"))
+  else if (!strncmp(tok, "HEAD", 4) || !strncmp(tok,"head", 4))
   {
     request->METHOD = METHOD_HEAD;
-    nexttok = strtok(NULL," ");
-
   }
-  else if (!strcmp(nexttok, "POST") || !strcmp(nexttok,"post"))
+  else if (!strncmp(tok, "POST", 4) || !strncmp(tok,"post", 4))
   {
-    nexttok = strtok(NULL,"\0");
     request->METHOD = METHOD_POST;
   }
   else
   {
     request->METHOD = METHOD_ERR;
+    return;
   }
 
-  if(!nexttok)
+  // --- find the uri --- //
+  tok = tokend+1;
+  tokend = strstr(tok, " ");
+  if(tokend == NULL)
   {
     request->METHOD = METHOD_ERR;
     return;
   }
-  strcpy((char *)request->URI, nexttok);
+  char *uristart = strstr(tok, "/"); // URI doesn't include the leading "/"
+  if(uristart == NULL)
+    uristart = tok;
+  else
+    uristart += 1; // strlen("/") == 1
+
+  char *uriend = strstr(tok, "?"); // URI ends with either ? or space ("/hello.txt?key=value " -> "/hello.txt")
+  if(uriend == NULL)
+    uriend = tokend;
+
+  strncpy((char *)request->URI, uristart, (uriend-uristart)); // only copy the uri, without " HTTP/1.1"
+  request->URI[(uriend-uristart)] = 0; // null terminate the string
+
+  // --- find the body length --- //
+  tok = tokend+1;
+  char lenstr[8];
+  mid((char *)tok, "Content-Length: ", "\r\n", lenstr);
+  request->bodylen = atoi(lenstr);
+  if(request->bodylen > DATA_BUF_SIZE)
+    request->bodylen = DATA_BUF_SIZE;
+
+  // --- find the body --- //
+  request->body = strstr(tok, "\r\n\r\n");
+  if(request->body == NULL) // couldn't find the body content
+  {
+    return;
+  }
+  request->body += 4; // 4 == strlen("\r\n\r\n")
 }
 
 #ifdef _OLD_

@@ -88,7 +88,7 @@ typedef struct _httpServer_webContent
 	uint8_t * 	content;
 }httpServer_webContent;
 
-typedef uint32_t (*webCallback)(uint8_t *buf);  ///< callback function that fills the buf & returns the length
+typedef uint32_t (*webCallback)(void *buf);  ///< callback function that fills the buf & returns the length
 typedef struct _httpServer_dynamicContent
 {
         uint8_t *       content_name;

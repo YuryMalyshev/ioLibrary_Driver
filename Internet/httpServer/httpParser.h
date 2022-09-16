@@ -8,6 +8,12 @@
 #ifndef	__HTTPPARSER_H__
 #define	__HTTPPARSER_H__
 
+#include "httpParser.h"
+
+#ifndef DATA_BUF_SIZE
+        #define DATA_BUF_SIZE           2048
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -130,13 +136,15 @@ static const char 	ERROR_REQUEST_PAGE[] = "HTTP/1.1 400 OK\r\nContent-Type: text
  */
 
 //#define MAX_URI_SIZE	1461
-#define MAX_URI_SIZE	512
+#define MAX_URI_SIZE	128
 
 typedef struct _st_http_request
 {
 	uint8_t	METHOD;						/**< request method(METHOD_GET...). */
 	uint8_t	TYPE;						/**< request type(PTYPE_HTML...).   */
 	uint8_t	URI[MAX_URI_SIZE];			/**< request file name.             */
+	uint16_t bodylen;
+	uint8_t *body;
 }st_http_request;
 
 // HTTP Parsing functions
