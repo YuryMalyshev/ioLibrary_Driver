@@ -183,6 +183,11 @@ void parse_http_request(
   char *uriend = strstr(tok, "?"); // URI ends with either ? or space ("/hello.txt?key=value " -> "/hello.txt")
   if(uriend == NULL)
     uriend = tokend;
+  else // there are parameters
+  {
+    request->uriparamlen = tokend-(uriend+1);
+    request->uriparam = uriend+1;
+  }
 
   strncpy((char *)request->URI, uristart, (uriend-uristart)); // only copy the uri, without " HTTP/1.1"
   request->URI[(uriend-uristart)] = 0; // null terminate the string
@@ -192,8 +197,6 @@ void parse_http_request(
   char lenstr[8];
   mid((char *)tok, "Content-Length: ", "\r\n", lenstr);
   request->bodylen = atoi(lenstr);
-  if(request->bodylen > DATA_BUF_SIZE)
-    request->bodylen = DATA_BUF_SIZE;
 
   // --- find the body --- //
   request->body = strstr(tok, "\r\n\r\n");
@@ -202,6 +205,9 @@ void parse_http_request(
     return;
   }
   request->body += 4; // 4 == strlen("\r\n\r\n")
+  uint16_t maxbodylen = DATA_BUF_SIZE-(request->body - buf); // The max body size is max buffer size - length of everything before the body
+  if(request->bodylen > maxbodylen)
+      request->bodylen = maxbodylen;
 }
 
 #ifdef _OLD_
