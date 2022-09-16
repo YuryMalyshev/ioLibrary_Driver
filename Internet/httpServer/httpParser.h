@@ -143,8 +143,10 @@ typedef struct _st_http_request
 	uint8_t	METHOD;						/**< request method(METHOD_GET...). */
 	uint8_t	TYPE;						/**< request type(PTYPE_HTML...).   */
 	uint8_t	URI[MAX_URI_SIZE];			/**< request file name.             */
-	uint8_t uriparamlen;                            /**< Length of the URI parameters */
+	uint16_t uriparamlen;                           /**< Length of the URI parameters */
 	uint8_t *uriparam;                              /**< Pointer to URI parameters (?....) */
+	uint16_t headerslen;                            /**< Length of the headers */
+	uint8_t *headers;                               /**< Pointer to headers (Key: Value\r\nKey: Value) */
 	uint16_t bodylen;                               /**< Length of the body */
 	uint8_t *body;                                  /**< Pointer to the body of the request */
 }st_http_request;
