@@ -554,12 +554,12 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 					content_addr = (uint32_t)content_num;
 					HTTPSock_Status[get_seqnum].storage_type = CODEFLASH;
 				}
-				else if(find_userReg_dynContent(uri_name, &content_num))
+				else if(find_userReg_getHandler(uri_name, &content_num))
                                 {
                                   content_found = 1; // Web content found in code flash memory
                                   content_addr = (uint32_t) content_num;
                                   HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
-                                  file_len = dynamic_content[content_addr].callback(dynContent_buf);
+                                  file_len = dynamic_content[content_addr].callback(p_http_request, dynContent_buf);
                                 }
 				// Not CGI request, Web content in 'SD card' or 'Data flash' requested
 #ifdef _USE_SDCARD_
@@ -651,17 +651,9 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 			{
 			  if(find_userReg_postHandler(uri_name, &content_num))
                           {
-                            webCallback handler = post_handlers[content_num].callback;
-                            if(find_userReg_dynContent(uri_name, &content_num))
-                            {
-                              content_found = 1; // Web content found
-                              handler(p_http_request); // call the handler
-                              content_addr = (uint32_t) content_num;
-                              HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
-                              file_len = dynamic_content[content_addr].callback(dynContent_buf);
-                            }
-                            else
-                              content_found = 0;
+                            content_found = 1;
+                            HTTPSock_Status[get_seqnum].storage_type = DYNAMIC;
+                            file_len = post_handlers[content_num].callback(p_http_request, dynContent_buf);
                           }
                           else	// HTTP POST Method; Content not found
                           {
@@ -742,7 +734,7 @@ void reg_httpServer_webContent(uint8_t * content_name, uint8_t * content)
 	total_content_cnt++;
 }
 
-void reg_httpServer_dynContent(uint8_t *content_name, webCallback callback) {
+void reg_httpServer_getHandler(uint8_t *content_name, webCallback callback) {
   uint16_t name_len;
 
   if(content_name == NULL || callback == NULL)
@@ -831,7 +823,7 @@ uint8_t find_userReg_webContent(uint8_t * content_name, uint16_t * content_num, 
 	return ret;
 }
 
-uint8_t find_userReg_dynContent(uint8_t *content_name, uint16_t *content_num) {
+uint8_t find_userReg_getHandler(uint8_t *content_name, uint16_t *content_num) {
   uint16_t i;
   uint8_t ret = 0; // '0' means 'File Not Found'
 
