@@ -164,7 +164,7 @@ uint8_t * get_http_uri_name(uint8_t * uri);
 
 // Utility functions
 uint16_t ATOI(uint8_t * str, uint8_t base);
-void mid(char* src, char* s1, char* s2, char* sub);
+uint32_t mid(char* src, char* s1, char* s2, char* sub);
 void inet_addr_(uint8_t * addr, uint8_t * ip);
 
 #ifdef __cplusplus

@@ -404,7 +404,7 @@ static void send_http_response_body(uint8_t s, uint8_t * uri_name, uint8_t * buf
 	else if(HTTPSock_Status[get_seqnum].storage_type == DYNAMIC)
         {
           // do nothing, we already read the content into the buffer
-          strcpy(&buf[0], dynContent_buf);
+          memcpy(&buf[0], dynContent_buf, send_len);
         }
 #ifdef _USE_SDCARD_
 	else if(HTTPSock_Status[get_seqnum].storage_type == SDCARD)

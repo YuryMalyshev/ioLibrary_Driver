@@ -135,6 +135,7 @@ void parse_http_request(
   // Input string examples:
   // GET /helloworld.txt HTTP/1.1\r\nHeaderKey: HeaderValue\r\n\r\nBodyContent
   // POST /helloworld.txt?key=value HTTP/1.1\r\nHeaderKey: HeaderValue\r\n
+
   char *tokend;
   char *tok;
 
@@ -170,15 +171,20 @@ void parse_http_request(
     request->METHOD = METHOD_ERR;
     return;
   }
-  char *uristart = strstr(tok, "/"); // URI doesn't include the leading "/"
-  if(uristart == NULL)
-    uristart = tok;
+  char *uristart = strstr(tok, "/"); // URI doesn't include the leading "/" but the string must include it
+  if(uristart == NULL) {
+    request->METHOD = METHOD_ERR; return;
+  }
   else
     uristart += 1; // strlen("/") == 1
 
   char *uriend = strstr(tok, "?"); // URI ends with either ? or space ("/hello.txt?key=value " -> "/hello.txt")
   if(uriend == NULL)
+  {
     uriend = tokend;
+    request->uriparamlen = 0;
+    request->uriparam = NULL;
+  }
   else // there are parameters
   {
     request->uriparamlen = tokend-(uriend+1);
@@ -204,17 +210,27 @@ void parse_http_request(
     request->headerslen = strlen(tok);
     return;
   }
-  request->headerslen = (char*)request->body-tok;
+  request->headerslen = ((char*)request->body)-tok;
+  // OK
   // --- find the body length --- //
   char lenstr[8];
-  mid((char *)request->headers, "Content-Length: ", "\r\n", lenstr);
-  request->bodylen = atoi(lenstr);
-
-  // --- find the body --- //
-  request->body += 4; // 4 == strlen("\r\n\r\n")
-  uint16_t maxbodylen = DATA_BUF_SIZE-(request->body - buf); // The max body size is max buffer size - length of everything before the body
-  if(request->bodylen > maxbodylen)
+  if(mid((char *)request->headers, "Content-Length: ", "\r\n", lenstr) > 0)
+  {
+    request->bodylen = atoi(lenstr);
+    // --- find the body --- //
+    request->body += 4; // 4 == strlen("\r\n\r\n")
+    uint16_t maxbodylen = DATA_BUF_SIZE-(request->body - buf); // The max body size is max buffer size - length of everything before the body
+    if(request->bodylen > maxbodylen)
       request->bodylen = maxbodylen;
+    else
+      request->body[request->bodylen] = 0;
+
+  }
+  else
+  {
+    request->bodylen = 0;
+    request->body = NULL;
+  }
 }
 
 #ifdef _OLD_
@@ -396,19 +412,23 @@ uint16_t ATOI(
  * @param sub The string between s1 and s2
  * @return The length value atfer working
  */
-void mid(char* src, char* s1, char* s2, char* sub)
+uint32_t mid(char* src, char* s1, char* s2, char* sub)
 {
 	char* sub1;
 	char* sub2;
 	uint16_t n;
 
 	sub1=strstr((char*)src,(char*)s1);
+	if(sub1 == NULL)
+	  return 0;
 	sub1+=strlen((char*)s1);
 	sub2=strstr((char*)sub1,(char*)s2);
-
+	if(sub2 == NULL)
+	  return 0;
 	n=sub2-sub1;
 	strncpy((char*)sub,(char*)sub1,n);
 	sub[n]='\0';
+	return n;
 }
 
 ////////////////////////////////////////////////////////////////////
