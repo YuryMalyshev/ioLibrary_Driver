@@ -15,7 +15,6 @@ extern "C" {
 #include "httpParser.h"
 
 // HTTP Server debug message enable
-//#define _HTTPSERVER_DEBUG_
 
 #define INITIAL_WEBPAGE				"index.html"
 #define M_INITIAL_WEBPAGE			"m/index.html"
@@ -38,7 +37,7 @@ extern "C" {
 /*********************************************
 * HTTP Process states list
 *********************************************/
-#define STATE_HTTP_IDLE             0           /* IDLE, Waiting for data received (TCP established) */
+#define STATE_HTTP_IDLE                 0           /* IDLE, Waiting for data received (TCP established) */
 #define STATE_HTTP_REQ_INPROC  		1           /* Received HTTP request from HTTP client */
 #define STATE_HTTP_REQ_DONE    		2           /* The end of HTTP request parse */
 #define STATE_HTTP_RES_INPROC  		3           /* Sending the HTTP response to HTTP client (in progress) */
@@ -54,7 +53,7 @@ extern "C" {
 /*********************************************
 * HTTP Content NAME length
 *********************************************/
-#define MAX_CONTENT_NAME_LEN		128
+#define MAX_CONTENT_NAME_LEN		256
 
 /*********************************************
 * HTTP Timeout
@@ -81,7 +80,7 @@ typedef struct _st_http_socket
 }st_http_socket;
 
 // Web content structure for file in code flash memory
-#define MAX_CONTENT_CALLBACK		20
+#define MAX_CONTENT_CALLBACK		30
 
 typedef struct _httpServer_webContent
 {

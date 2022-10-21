@@ -101,12 +101,12 @@ void find_http_uri_type(
 	char * buf;
 	buf = (char *)buff;
 
-	if 	(strstr(buf, ".htm")	|| strstr(buf, ".html"))	*type = PTYPE_HTML;
-	else if (strstr(buf, ".gif"))							*type = PTYPE_GIF;
+	if 	(strstr(buf, ".htm")	|| strstr(buf, ".html"))*type = PTYPE_HTML;
+	else if (strstr(buf, ".gif"))	                        *type = PTYPE_GIF;
 	else if (strstr(buf, ".text") 	|| strstr(buf,".txt"))	*type = PTYPE_TEXT;
 	else if (strstr(buf, ".cgx"))                           *type = PTYPE_CGX;
 	else if (strstr(buf, ".jpeg") 	|| strstr(buf,".jpg"))	*type = PTYPE_JPEG;
-	else if (strstr(buf, ".swf")) 							*type = PTYPE_FLASH;
+	else if (strstr(buf, ".swf")) 				*type = PTYPE_FLASH;
 	else if (strstr(buf, ".cgi") 	|| strstr(buf,".CGI"))	*type = PTYPE_CGI;
 	else if (strstr(buf, ".json") 	|| strstr(buf,".JSON"))	*type = PTYPE_JSON;
 	else if (strstr(buf, ".js") 	|| strstr(buf,".JS"))	*type = PTYPE_JS;
@@ -120,7 +120,7 @@ void find_http_uri_type(
 	else if (strstr(buf, ".woff") 	|| strstr(buf,".WOFF"))	*type = PTYPE_WOFF;
 	else if (strstr(buf, ".eot") 	|| strstr(buf,".EOT"))	*type = PTYPE_EOT;
 	else if (strstr(buf, ".svg") 	|| strstr(buf,".SVG"))	*type = PTYPE_SVG;
-	else 													*type = PTYPE_ERR;
+	else *type = PTYPE_ERR;
 }
 
 
@@ -165,34 +165,39 @@ void parse_http_request(
 
   // --- find the uri --- //
   tok = tokend+1;
-  tokend = strstr(tok, " ");
+  tokend = strstr(tok," ");
   if(tokend == NULL)
   {
     request->METHOD = METHOD_ERR;
     return;
   }
+
   char *uristart = strstr(tok, "/"); // URI doesn't include the leading "/" but the string must include it
   if(uristart == NULL) {
-    request->METHOD = METHOD_ERR; return;
+    request->METHOD = METHOD_ERR;
+    return;
   }
   else
     uristart += 1; // strlen("/") == 1
 
   char *uriend = strstr(tok, "?"); // URI ends with either ? or space ("/hello.txt?key=value " -> "/hello.txt")
-  if(uriend == NULL)
+  if(uriend == NULL) // if there are no parameters
   {
-    uriend = tokend;
-    request->uriparamlen = 0;
+    //uriend = tokend;
+    if (strstr(tok, " ") != NULL){ // search for space and assign uri end to space
+      uriend = strstr(tok, " ");
+      request->uriparamlen = 0; // setting paramlen to 0
+      request->uriparam = NULL; // and parameters to NULL
+  }}
+  else {
+      // "/hello.txt?key=value ", tokend is pointing to space
+      uriend = strstr(tok," ");
+      request->uriparamlen = 0;
     request->uriparam = NULL;
   }
-  else // there are parameters
-  {
-    request->uriparamlen = tokend-(uriend+1);
-    request->uriparam = uriend+1;
-  }
-
+  uriend = strstr(tok, " ");
   strncpy((char *)request->URI, uristart, (uriend-uristart)); // only copy the uri, without " HTTP/1.1"
-  request->URI[(uriend-uristart)] = 0; // null terminate the string
+  request->URI[(uriend-uristart)] = '\0'; // null terminate the string
 
   // --- find headers --- //
   tok = tokend+1;
@@ -231,6 +236,11 @@ void parse_http_request(
     request->bodylen = 0;
     request->body = NULL;
   }
+  tokend = NULL;
+  tok = NULL;
+  free(tokend);
+  free(tok);
+
 }
 
 #ifdef _OLD_
@@ -356,7 +366,8 @@ uint8_t get_http_uri_name(uint8_t * uri, uint8_t * uri_buf)
 
 	if(strcmp((char *)uri_ptr,"/")) uri_ptr++;
 	strcpy((char *)uri_buf, (char *)uri_ptr);
-
+	uri_ptr = NULL;
+	free(uri_ptr);
 #ifdef _HTTPPARSER_DEBUG_
 	printf("  uri_name = %s\r\n", uri_buf);
 #endif
@@ -428,6 +439,10 @@ uint32_t mid(char* src, char* s1, char* s2, char* sub)
 	n=sub2-sub1;
 	strncpy((char*)sub,(char*)sub1,n);
 	sub[n]='\0';
+	sub1 = NULL;
+	sub2 = NULL;
+	free(sub1);
+	free(sub2);
 	return n;
 }
 

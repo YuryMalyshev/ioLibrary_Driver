@@ -170,7 +170,9 @@ void httpServer_run(uint8_t seqnum)
 #endif
 						// HTTP 'response' handler; includes send_http_response_header / body function
 						http_process_handler(s, parsed_http_request);
-
+#ifdef _HTTPSERVER_DEBUG_
+                                                printf("> HTTPSocket[%d] : HTTP PROCESS HANDLER FINISHED\r\n", s);
+#endif
 						gettime = get_httpServer_timecount();
 						// Check the TX socket buffer for End of HTTP response sends
 						while(getSn_TX_FSR(s) != (getSn_TxMAX(s)))
@@ -620,13 +622,30 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
 			break;
 
 		case METHOD_POST :
-			uri_name = (char *)p_http_request->URI;
+			uri_name = p_http_request->URI;
+#ifdef _HTTPSERVER_DEBUG_
+                        printf("++++++++++++++++++++++++++++");
+			printf("HTTP REQ BEFORE TYPE SEARCH");
+			printf("\r\n> HTTPSocket[%d] : HTTP Method POST\r\n", s);
+                        printf("> HTTPSocket[%d] : Request URI = %s\r\n", s, uri_name);
+                        printf("Type = %d\r\n", p_http_request->TYPE);
+                        printf("URI = %d\r\n", p_http_request->URI);
+                        printf("Parameters length = %d\r\n", p_http_request->uriparamlen);
+                        printf("Parameters = %d\r\n", p_http_request->uriparam);
+                        printf("BODY LEN = %d\r\n", p_http_request-> bodylen);
+                        printf("++++++++++++++++++++++++++++");
+
+
+#endif
+
 			find_http_uri_type(&p_http_request->TYPE, uri_name);	// Check file type (HTML, TEXT, GIF, JPEG are included)
 
 #ifdef _HTTPSERVER_DEBUG_
+			printf("\r\n HTTP REQ AFTER TYPE SEARCH");
 			printf("\r\n> HTTPSocket[%d] : HTTP Method POST\r\n", s);
-			printf("> HTTPSocket[%d] : Request URI = %s ", s, uri_name);
+			printf("> HTTPSocket[%d] : Request URI = %s \r\n", s, uri_name);
 			printf("Type = %d\r\n", p_http_request->TYPE);
+
 #endif
 
 			if(p_http_request->TYPE == PTYPE_CGI)	// HTTP POST Method; CGI Process
@@ -657,6 +676,7 @@ static void http_process_handler(uint8_t s, st_http_request * p_http_request)
                           }
                           else	// HTTP POST Method; Content not found
                           {
+                            printf(">> Find_userReg_Content - > not Found");
                             content_found = 0;
                           }
 			}

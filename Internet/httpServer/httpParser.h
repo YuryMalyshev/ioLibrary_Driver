@@ -33,18 +33,19 @@ extern "C" {
 #define		PTYPE_HTML		1		/**< HTML file.  */
 #define		PTYPE_GIF		2		/**< GIF file.   */
 #define		PTYPE_TEXT		3		/**< TEXT file.  */
-#define         PTYPE_CGX               25              /**< CGX file.  */
 #define		PTYPE_JPEG		4		/**< JPEG file.  */
 #define		PTYPE_FLASH		5		/**< FLASH file. */
 #define		PTYPE_MPEG		6		/**< MPEG file.  */
 #define		PTYPE_PDF		7		/**< PDF file.   */
 #define 	PTYPE_CGI		8		/**< CGI file.   */
-#define     PTYPE_XML       9       /**< XML file.   */ 
-#define     PTYPE_CSS       10      /**< CSS file.   */
+#define         PTYPE_XML               9               /**< XML file.   */
+#define         PTYPE_CSS               10              /**< CSS file.   */
 #define		PTYPE_JS		11		/**< JavaScript file.	*/
 #define		PTYPE_JSON		12		/**< JSON (JavaScript Standard Object Notation) file.	*/
 #define		PTYPE_PNG		13		/**< PNG file. 	*/
 #define		PTYPE_ICO		14		/**< ICON file. */
+#define         PTYPE_BIN               15              /**< BIN file. */
+#define         PTYPE_CGX               16              /**< CGX file.  */
 
 #define		PTYPE_TTF		20		/**< Font type: TTF file. */
 #define		PTYPE_OTF		21		/**< Font type: OTF file. */
