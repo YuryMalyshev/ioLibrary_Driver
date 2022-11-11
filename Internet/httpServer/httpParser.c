@@ -228,7 +228,15 @@ void parse_http_request(
     if(request->bodylen > maxbodylen)
       request->bodylen = maxbodylen;
     else
-      request->body[request->bodylen] = 0;
+    {
+      if(request->bodylen > 0)
+      {
+        request->body[request->bodylen] = 0;
+        request->body[request->bodylen+1] = 0;
+      }
+      else
+        request->body = NULL;
+    }
 
   }
   else
@@ -236,11 +244,6 @@ void parse_http_request(
     request->bodylen = 0;
     request->body = NULL;
   }
-  tokend = NULL;
-  tok = NULL;
-  free(tokend);
-  free(tok);
-
 }
 
 #ifdef _OLD_
@@ -366,8 +369,6 @@ uint8_t get_http_uri_name(uint8_t * uri, uint8_t * uri_buf)
 
 	if(strcmp((char *)uri_ptr,"/")) uri_ptr++;
 	strcpy((char *)uri_buf, (char *)uri_ptr);
-	uri_ptr = NULL;
-	free(uri_ptr);
 #ifdef _HTTPPARSER_DEBUG_
 	printf("  uri_name = %s\r\n", uri_buf);
 #endif
@@ -439,10 +440,6 @@ uint32_t mid(char* src, char* s1, char* s2, char* sub)
 	n=sub2-sub1;
 	strncpy((char*)sub,(char*)sub1,n);
 	sub[n]='\0';
-	sub1 = NULL;
-	sub2 = NULL;
-	free(sub1);
-	free(sub2);
 	return n;
 }
 
