@@ -212,6 +212,8 @@ void httpServer_run(uint8_t seqnum)
 					HTTPSock_Status[seqnum].file_start = 0;
 					HTTPSock_Status[seqnum].sock_status = STATE_HTTP_IDLE;
 
+					parsed_http_request->METHOD = 0;
+					memset(pHTTP_RX, 0, 1024);
 //#ifdef _USE_SDCARD_
 //					f_close(&fs);
 //#endif

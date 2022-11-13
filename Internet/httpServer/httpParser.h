@@ -137,7 +137,10 @@ static const char 	ERROR_REQUEST_PAGE[] = "HTTP/1.1 400 OK\r\nContent-Type: text
  */
 
 //#define MAX_URI_SIZE	1461
-#define MAX_URI_SIZE	128
+#define MAX_URI_SIZE            128
+#define MAX_URI_PARAM_SIZE      128
+#define MAX_HEADERS_SIZE        320
+#define MAX_BODY_SIZE           512
 
 typedef struct _st_http_request
 {
@@ -145,11 +148,11 @@ typedef struct _st_http_request
 	uint8_t	TYPE;						/**< request type(PTYPE_HTML...).   */
 	uint8_t	URI[MAX_URI_SIZE];			/**< request file name.             */
 	uint16_t uriparamlen;                           /**< Length of the URI parameters */
-	uint8_t *uriparam;                              /**< Pointer to URI parameters (?....) */
-	uint16_t headerslen;                            /**< Length of the headers */
-	uint8_t *headers;                               /**< Pointer to headers (Key: Value\r\nKey: Value) */
-	uint16_t bodylen;                               /**< Length of the body */
-	uint8_t *body;                                  /**< Pointer to the body of the request */
+	char uriparam[MAX_URI_PARAM_SIZE];           /**< Pointer to URI parameters (?....) */
+	uint16_t headerslen;                         /**< Length of the headers */
+	char headers[MAX_HEADERS_SIZE];              /**< Pointer to headers (Key: Value\r\nKey: Value) */
+	uint16_t bodylen;                            /**< Length of the body */
+	uint8_t body[MAX_BODY_SIZE];                 /**< Pointer to the body of the request */
 }st_http_request;
 
 // HTTP Parsing functions

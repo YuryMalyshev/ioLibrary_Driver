@@ -187,13 +187,11 @@ void parse_http_request(
     if (strstr(tok, " ") != NULL){ // search for space and assign uri end to space
       uriend = strstr(tok, " ");
       request->uriparamlen = 0; // setting paramlen to 0
-      request->uriparam = NULL; // and parameters to NULL
   }}
   else {
       // "/hello.txt?key=value ", tokend is pointing to space
       uriend = strstr(tok," ");
       request->uriparamlen = 0;
-    request->uriparam = NULL;
   }
   uriend = strstr(tok, " ");
   strncpy((char *)request->URI, uristart, (uriend-uristart)); // only copy the uri, without " HTTP/1.1"
@@ -206,16 +204,19 @@ void parse_http_request(
     request->METHOD = METHOD_ERR; return;
   }
   tok = tokend+2;
-  request->headers = tok;
+  char* headersstart = tok;
   // find the end of headers
-  request->body = strstr(tok, "\r\n\r\n");
-  if(request->body == NULL) // should never happen during normal operation
+  uint8_t *bodystart = strstr(tok, "\r\n\r\n");
+  if(bodystart == NULL) // should never happen during normal operation
   {
     request->bodylen = 0;
     request->headerslen = strlen(tok);
     return;
   }
-  request->headerslen = ((char*)request->body)-tok;
+  request->headerslen = (((char*)bodystart)-tok)+2; // must end with '\r\n'
+  // copy headers and terminate
+  strncpy(request->headers, headersstart, request->headerslen);
+  request->headers[request->headerslen] = 0;
   // OK
   // --- find the body length --- //
   char lenstr[8];
@@ -223,26 +224,16 @@ void parse_http_request(
   {
     request->bodylen = atoi(lenstr);
     // --- find the body --- //
-    request->body += 4; // 4 == strlen("\r\n\r\n")
-    uint16_t maxbodylen = DATA_BUF_SIZE-(request->body - buf); // The max body size is max buffer size - length of everything before the body
-    if(request->bodylen > maxbodylen)
-      request->bodylen = maxbodylen;
-    else
-    {
-      if(request->bodylen > 0)
-      {
-        request->body[request->bodylen] = 0;
-        request->body[request->bodylen+1] = 0;
-      }
-      else
-        request->body = NULL;
-    }
-
+    bodystart += 4; // 4 == strlen("\r\n\r\n")
+    if(request->bodylen > MAX_BODY_SIZE)
+      request->bodylen = MAX_BODY_SIZE;
+    memcpy(request->body, bodystart, request->bodylen);
+    if(request->bodylen < MAX_BODY_SIZE)
+      request->body[request->bodylen] = 0;
   }
   else
   {
     request->bodylen = 0;
-    request->body = NULL;
   }
 }
 
