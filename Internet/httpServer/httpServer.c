@@ -157,7 +157,7 @@ void httpServer_run(uint8_t seqnum)
 						if (len > DATA_BUF_SIZE) len = DATA_BUF_SIZE;
 						len = recv(s, http_request, len);
 
-						parse_http_request(parsed_http_request, http_request);
+						parse_http_request(parsed_http_request, http_request, len);
 #ifdef _HTTPSERVER_DEBUG_
 						getSn_DIPR(s, destip);
 						destport = getSn_DPORT(s);

@@ -129,8 +129,8 @@ void find_http_uri_type(
  */ 
 void parse_http_request(
 	st_http_request * request, 	/**< request to be returned */
-	uint8_t * buf				/**< pointer to be parsed */
-	)
+	uint8_t * buf,				/**< pointer to be parsed */
+	uint16_t len)  /**< Length of the packet*/
 {
   // Input string examples:
   // GET /helloworld.txt HTTP/1.1\r\nHeaderKey: HeaderValue\r\n\r\nBodyContent
@@ -225,6 +225,15 @@ void parse_http_request(
     request->bodylen = atoi(lenstr);
     // --- find the body --- //
     bodystart += 4; // 4 == strlen("\r\n\r\n")
+
+    // check if the body is there by compaing the received length to the total excpected length
+    uint16_t expected_len = (bodystart-buf) + request->bodylen;
+    if(expected_len != len)
+    {
+      request->METHOD = METHOD_ERR;
+      return;
+    }
+
     if(request->bodylen > MAX_BODY_SIZE)
       request->bodylen = MAX_BODY_SIZE;
     memcpy(request->body, bodystart, request->bodylen);
